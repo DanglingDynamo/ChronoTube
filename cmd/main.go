@@ -27,6 +27,7 @@ func init() {
 }
 
 func main() {
+	// TODO: Cleanup
 	config := config.LoadConfig()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
