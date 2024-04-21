@@ -14,10 +14,10 @@ type Video struct {
 	ThumbnailURL  string        `json:"thumnail_url"`
 	Provider      VideoProvider `json:"provider"`
 	VideoID       string        `json:"video_key"`
-	ViewCount     int           `json:"view_count"`
-	LikeCount     int           `json:"like_count"`
-	FavoriteCount int           `json:"favorite_count"`
-	CommentCount  int           `json:"comment_count"`
+	ViewCount     uint64        `json:"view_count"`
+	LikeCount     uint64        `json:"like_count"`
+	FavoriteCount uint64        `json:"favorite_count"`
+	CommentCount  uint64        `json:"comment_count"`
 }
 
 type VideoProvider string

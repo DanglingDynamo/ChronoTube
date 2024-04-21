@@ -10,6 +10,45 @@ import (
 	"time"
 )
 
+const fetchVideosPaginated = `-- name: FetchVideosPaginated :many
+SELECT id, title, description, published_on, thumbnail_url, provider, video_id, view_count, like_count, favorite_count, comment_count FROM videos ORDER BY published_on DESC LIMIT 10 OFFSET $1
+`
+
+func (q *Queries) FetchVideosPaginated(ctx context.Context, offset int32) ([]Video, error) {
+	rows, err := q.db.QueryContext(ctx, fetchVideosPaginated, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Video
+	for rows.Next() {
+		var i Video
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Description,
+			&i.PublishedOn,
+			&i.ThumbnailUrl,
+			&i.Provider,
+			&i.VideoID,
+			&i.ViewCount,
+			&i.LikeCount,
+			&i.FavoriteCount,
+			&i.CommentCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertVideo = `-- name: InsertVideo :one
 INSERT INTO videos(title, description, published_on, thumbnail_url, provider, video_id, view_count, like_count, favorite_count, comment_count) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, title, description, published_on, thumbnail_url, provider, video_id, view_count, like_count, favorite_count, comment_count
 `
@@ -21,10 +60,10 @@ type InsertVideoParams struct {
 	ThumbnailUrl  string
 	Provider      string
 	VideoID       string
-	ViewCount     int32
-	LikeCount     int32
-	FavoriteCount int32
-	CommentCount  int32
+	ViewCount     int64
+	LikeCount     int64
+	FavoriteCount int64
+	CommentCount  int64
 }
 
 func (q *Queries) InsertVideo(ctx context.Context, arg InsertVideoParams) (Video, error) {

@@ -16,7 +16,7 @@ import (
 	cronjobs "github.com/DanglingDynamo/chronotube/internal/cron_jobs"
 	"github.com/DanglingDynamo/chronotube/internal/database"
 	"github.com/DanglingDynamo/chronotube/internal/models"
-	"github.com/DanglingDynamo/chronotube/internal/services"
+	"github.com/DanglingDynamo/chronotube/internal/repository"
 )
 
 func init() {
@@ -48,7 +48,7 @@ func main() {
 	}
 	db := database.New(conn)
 
-	service, err := services.NewYoutubeService(os.Getenv("API_SECRET_KEY"), db)
+	service, err := repository.NewYoutubeRepository(os.Getenv("API_SECRET_KEY"), db)
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
@@ -60,6 +60,7 @@ func main() {
 	go cronjobs.FetchVideos(ctx, time.Second*10, service, "basketball", out, errChan)
 	go cronjobs.StoreVideos(out, service, errChan)
 
+	// Log errors in the goroutines also handle theme here if later required in case of emergency exit etc
 	go func() {
 		for err := range errChan {
 			slog.Error(err.Error())

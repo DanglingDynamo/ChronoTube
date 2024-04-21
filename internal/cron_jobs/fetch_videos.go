@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/DanglingDynamo/chronotube/internal/models"
-	"github.com/DanglingDynamo/chronotube/internal/services"
+	"github.com/DanglingDynamo/chronotube/internal/repository"
 )
 
 func FetchVideos(
 	ctx context.Context,
 	duration time.Duration,
-	service services.VideoService,
+	service repository.VideoRepository,
 	queryString string,
 	out chan<- []*models.Video,
 	errChan chan<- error,

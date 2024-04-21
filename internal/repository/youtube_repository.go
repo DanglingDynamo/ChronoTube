@@ -1,4 +1,4 @@
-package services
+package repository
 
 import (
 	"context"
@@ -14,13 +14,13 @@ import (
 	"github.com/DanglingDynamo/chronotube/pkg/youtube"
 )
 
-// Implements the VideoService interface
-type YoutubeService struct {
+// Implements the VideoRepository interface
+type YoutubeRepository struct {
 	client *youtube.YoutubeClient
 	db     *database.Queries
 }
 
-func NewYoutubeService(apiKey string, db *database.Queries) (*YoutubeService, error) {
+func NewYoutubeRepository(apiKey string, db *database.Queries) (*YoutubeRepository, error) {
 	if apiKey != "" {
 		return nil, errors.New("please provide an API key")
 	}
@@ -30,13 +30,13 @@ func NewYoutubeService(apiKey string, db *database.Queries) (*YoutubeService, er
 		return nil, err
 	}
 
-	return &YoutubeService{
+	return &YoutubeRepository{
 		client: ytClient,
 		db:     db,
 	}, nil
 }
 
-func (service *YoutubeService) FetchVideosFromAPI(
+func (service *YoutubeRepository) FetchVideosFromAPI(
 	query string,
 	publishedAfter time.Time,
 ) ([]*models.Video, error) {
@@ -76,10 +76,10 @@ func (service *YoutubeService) FetchVideosFromAPI(
 			ThumbnailURL:  video.Snippet.Thumbnails.Default.Url,
 			Provider:      models.VideoProviderYoutube,
 			VideoID:       video.Id.VideoId,
-			ViewCount:     int(videoStatistics[video.Id.VideoId].ViewCount),
-			LikeCount:     int(videoStatistics[video.Id.VideoId].LikeCount),
-			FavoriteCount: int(videoStatistics[video.Id.VideoId].FavoriteCount),
-			CommentCount:  int(videoStatistics[video.Id.VideoId].CommentCount),
+			ViewCount:     videoStatistics[video.Id.VideoId].ViewCount,
+			LikeCount:     videoStatistics[video.Id.VideoId].LikeCount,
+			FavoriteCount: videoStatistics[video.Id.VideoId].FavoriteCount,
+			CommentCount:  videoStatistics[video.Id.VideoId].CommentCount,
 		}
 	}
 
@@ -87,7 +87,7 @@ func (service *YoutubeService) FetchVideosFromAPI(
 }
 
 // Storing Videos is specific to the service hence implemented here
-func (service *YoutubeService) StoreVideos(ctx context.Context, videos []*models.Video) error {
+func (service *YoutubeRepository) StoreVideos(ctx context.Context, videos []*models.Video) error {
 	var pgErr *pgconn.PgError
 	storeCount := 0
 	for i := range videos {
@@ -99,10 +99,10 @@ func (service *YoutubeService) StoreVideos(ctx context.Context, videos []*models
 			ThumbnailUrl:  video.ThumbnailURL,
 			Provider:      string(video.Provider),
 			VideoID:       video.VideoID,
-			ViewCount:     int32(video.ViewCount),
-			LikeCount:     int32(video.LikeCount),
-			FavoriteCount: int32(video.FavoriteCount),
-			CommentCount:  int32(video.CommentCount),
+			ViewCount:     int64(video.ViewCount),
+			LikeCount:     int64(video.LikeCount),
+			FavoriteCount: int64(video.FavoriteCount),
+			CommentCount:  int64(video.CommentCount),
 		})
 		if err != nil {
 			if errors.As(err, &pgErr) {

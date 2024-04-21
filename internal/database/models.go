@@ -18,8 +18,8 @@ type Video struct {
 	ThumbnailUrl  string
 	Provider      string
 	VideoID       string
-	ViewCount     int32
-	LikeCount     int32
-	FavoriteCount int32
-	CommentCount  int32
+	ViewCount     int64
+	LikeCount     int64
+	FavoriteCount int64
+	CommentCount  int64
 }
