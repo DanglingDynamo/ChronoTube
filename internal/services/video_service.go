@@ -8,6 +8,6 @@ import (
 )
 
 type VideoService interface {
-	FetchVideos(query string, publishedAfter time.Time) ([]*models.Video, error)
+	FetchVideosFromAPI(query string, publishedAfter time.Time) ([]*models.Video, error)
 	StoreVideos(ctx context.Context, videos []*models.Video) error
 }

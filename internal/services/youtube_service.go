@@ -36,12 +36,15 @@ func NewYoutubeService(apiKey string, db *database.Queries) (*YoutubeService, er
 	}, nil
 }
 
-func (service *YoutubeService) FetchVideos(
+func (service *YoutubeService) FetchVideosFromAPI(
 	query string,
 	publishedAfter time.Time,
 ) ([]*models.Video, error) {
 	slog.Info("Fetching Videos")
-	ytVideos, err := service.client.FetchVideos(query, publishedAfter.AddDate(0, 0, -2))
+	ytVideos, err := service.client.FetchVideos(
+		query,
+		publishedAfter.AddDate(0, 0, -9),
+	) // Search for videos that were uploaded after current time - 9 days (added 9 days so that I get some data)
 	if err != nil {
 		slog.Error(err.Error())
 		return nil, err
@@ -61,7 +64,7 @@ func (service *YoutubeService) FetchVideos(
 
 	for i, video := range ytVideos {
 		publishedAt, err := time.Parse(time.RFC3339, video.Snippet.PublishedAt)
-		if err != nil { // TODO:  complete error handling
+		if err != nil {
 			slog.Error(err.Error())
 			continue
 		}
@@ -83,8 +86,10 @@ func (service *YoutubeService) FetchVideos(
 	return videos, nil
 }
 
+// Storing Videos is specific to the service hence implemented here
 func (service *YoutubeService) StoreVideos(ctx context.Context, videos []*models.Video) error {
 	var pgErr *pgconn.PgError
+	storeCount := 0
 	for i := range videos {
 		video := videos[i]
 		_, err := service.db.InsertVideo(ctx, database.InsertVideoParams{
@@ -110,7 +115,10 @@ func (service *YoutubeService) StoreVideos(ctx context.Context, videos []*models
 			}
 			return err
 		}
+		storeCount += 1
 	}
-	slog.Info("Stored Videos")
+	if storeCount > 0 {
+		slog.Info("Stored Videos", "count", storeCount)
+	}
 	return nil
 }

@@ -25,7 +25,7 @@ func FetchVideos(
 			ticker.Stop()
 			return
 		case tick := <-ticker.C:
-			videos, err := service.FetchVideos(queryString, tick)
+			videos, err := service.FetchVideosFromAPI(queryString, tick)
 			if err != nil {
 				slog.Error(err.Error())
 				errChan <- err

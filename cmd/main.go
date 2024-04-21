@@ -56,7 +56,7 @@ func main() {
 	out := make(chan []*models.Video)
 	errChan := make(chan error)
 
-	go cronjobs.FetchVideos(ctx, time.Second*10, service, "football", out, errChan)
+	go cronjobs.FetchVideos(ctx, time.Second*10, service, "basketball", out, errChan)
 	go cronjobs.StoreVideos(out, service, errChan)
 
 	go func() {
