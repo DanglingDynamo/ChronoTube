@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS videos (
     published_on TIMESTAMP NOT NULL,
     thumbnail_url TEXT NOT NULL,
     provider TEXT NOT NULL, -- provides details about video provider 'youtube', 'vimeo', 'facebook' etc
-    video_id TEXT NOT NULL, -- contains information about the actual url of the video from where we can stream it
+    video_id TEXT UNIQUE NOT NULL, -- contains information about the actual url of the video from where we can stream it
     view_count INT NOT NULL,
     like_count INT NOT NULL,
     favorite_count INT NOT NULL,

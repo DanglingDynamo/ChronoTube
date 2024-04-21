@@ -11,17 +11,12 @@ import (
 )
 
 type Video struct {
-	ID           uuid.UUID
-	Title        string
-	Description  string
-	PublishedOn  time.Time
-	ThumbnailUrl string
-	Provider     string
-}
-
-type YoutubeVideo struct {
 	ID            uuid.UUID
-	Video         uuid.UUID
+	Title         string
+	Description   string
+	PublishedOn   time.Time
+	ThumbnailUrl  string
+	Provider      string
 	VideoID       string
 	ViewCount     int32
 	LikeCount     int32

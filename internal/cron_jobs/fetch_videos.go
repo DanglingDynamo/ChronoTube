@@ -15,6 +15,7 @@ func FetchVideos(
 	service services.VideoService,
 	queryString string,
 	out chan<- []*models.Video,
+	errChan chan<- error,
 ) {
 	ticker := time.NewTicker(duration)
 	for {
@@ -26,8 +27,8 @@ func FetchVideos(
 		case tick := <-ticker.C:
 			videos, err := service.FetchVideos(queryString, tick)
 			if err != nil {
-				// TODO: handle error
 				slog.Error(err.Error())
+				errChan <- err
 				continue
 			}
 

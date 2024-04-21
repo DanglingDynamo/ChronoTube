@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"time"
 
 	"github.com/DanglingDynamo/chronotube/internal/models"
@@ -8,4 +9,5 @@ import (
 
 type VideoService interface {
 	FetchVideos(query string, publishedAfter time.Time) ([]*models.Video, error)
+	StoreVideos(ctx context.Context, videos []*models.Video) error
 }

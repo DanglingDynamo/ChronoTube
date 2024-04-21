@@ -7,6 +7,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/DanglingDynamo/chronotube/internal/database"
 	"github.com/DanglingDynamo/chronotube/internal/models"
 	"github.com/DanglingDynamo/chronotube/pkg/youtube"
 )
@@ -14,9 +17,10 @@ import (
 // Implements the VideoService interface
 type YoutubeService struct {
 	client *youtube.YoutubeClient
+	db     *database.Queries
 }
 
-func NewYoutubeService(apiKey string) (*YoutubeService, error) {
+func NewYoutubeService(apiKey string, db *database.Queries) (*YoutubeService, error) {
 	if apiKey != "" {
 		return nil, errors.New("please provide an API key")
 	}
@@ -28,6 +32,7 @@ func NewYoutubeService(apiKey string) (*YoutubeService, error) {
 
 	return &YoutubeService{
 		client: ytClient,
+		db:     db,
 	}, nil
 }
 
@@ -76,4 +81,36 @@ func (service *YoutubeService) FetchVideos(
 	}
 
 	return videos, nil
+}
+
+func (service *YoutubeService) StoreVideos(ctx context.Context, videos []*models.Video) error {
+	var pgErr *pgconn.PgError
+	for i := range videos {
+		video := videos[i]
+		_, err := service.db.InsertVideo(ctx, database.InsertVideoParams{
+			Title:         video.Title,
+			Description:   video.Description,
+			PublishedOn:   video.PublishedOn,
+			ThumbnailUrl:  video.ThumbnailURL,
+			Provider:      string(video.Provider),
+			VideoID:       video.VideoID,
+			ViewCount:     int32(video.ViewCount),
+			LikeCount:     int32(video.LikeCount),
+			FavoriteCount: int32(video.FavoriteCount),
+			CommentCount:  int32(video.CommentCount),
+		})
+		if err != nil {
+			if errors.As(err, &pgErr) {
+				if pgErr.Code == "23505" { // Duplicate row video already exists
+					continue
+				}
+			}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return err
+		}
+	}
+	slog.Info("Stored Videos")
+	return nil
 }

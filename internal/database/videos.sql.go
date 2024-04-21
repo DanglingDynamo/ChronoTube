@@ -8,20 +8,23 @@ package database
 import (
 	"context"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 const insertVideo = `-- name: InsertVideo :one
-INSERT INTO videos(title, description, published_on, thumbnail_url, provider) VALUES ($1, $2, $3, $4, $5) RETURNING id, title, description, published_on, thumbnail_url, provider
+INSERT INTO videos(title, description, published_on, thumbnail_url, provider, video_id, view_count, like_count, favorite_count, comment_count) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, title, description, published_on, thumbnail_url, provider, video_id, view_count, like_count, favorite_count, comment_count
 `
 
 type InsertVideoParams struct {
-	Title        string
-	Description  string
-	PublishedOn  time.Time
-	ThumbnailUrl string
-	Provider     string
+	Title         string
+	Description   string
+	PublishedOn   time.Time
+	ThumbnailUrl  string
+	Provider      string
+	VideoID       string
+	ViewCount     int32
+	LikeCount     int32
+	FavoriteCount int32
+	CommentCount  int32
 }
 
 func (q *Queries) InsertVideo(ctx context.Context, arg InsertVideoParams) (Video, error) {
@@ -31,6 +34,11 @@ func (q *Queries) InsertVideo(ctx context.Context, arg InsertVideoParams) (Video
 		arg.PublishedOn,
 		arg.ThumbnailUrl,
 		arg.Provider,
+		arg.VideoID,
+		arg.ViewCount,
+		arg.LikeCount,
+		arg.FavoriteCount,
+		arg.CommentCount,
 	)
 	var i Video
 	err := row.Scan(
@@ -40,36 +48,6 @@ func (q *Queries) InsertVideo(ctx context.Context, arg InsertVideoParams) (Video
 		&i.PublishedOn,
 		&i.ThumbnailUrl,
 		&i.Provider,
-	)
-	return i, err
-}
-
-const insertYoutubeDetails = `-- name: InsertYoutubeDetails :one
-INSERT INTO youtube_videos(video, video_id, view_count, like_count, favorite_count, comment_count) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, video, video_id, view_count, like_count, favorite_count, comment_count
-`
-
-type InsertYoutubeDetailsParams struct {
-	Video         uuid.UUID
-	VideoID       string
-	ViewCount     int32
-	LikeCount     int32
-	FavoriteCount int32
-	CommentCount  int32
-}
-
-func (q *Queries) InsertYoutubeDetails(ctx context.Context, arg InsertYoutubeDetailsParams) (YoutubeVideo, error) {
-	row := q.db.QueryRowContext(ctx, insertYoutubeDetails,
-		arg.Video,
-		arg.VideoID,
-		arg.ViewCount,
-		arg.LikeCount,
-		arg.FavoriteCount,
-		arg.CommentCount,
-	)
-	var i YoutubeVideo
-	err := row.Scan(
-		&i.ID,
-		&i.Video,
 		&i.VideoID,
 		&i.ViewCount,
 		&i.LikeCount,
