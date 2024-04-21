@@ -15,6 +15,7 @@ func FetchVideos(
 	service repository.VideoRepository,
 	queryString string,
 	out chan<- []*models.Video,
+	errChan chan<- error,
 ) {
 	ticker := time.NewTicker(duration)
 	defer ticker.Stop()
@@ -28,9 +29,13 @@ func FetchVideos(
 		case tick := <-ticker.C:
 			videos, err := service.FetchVideosFromAPI(queryString, tick)
 			if err != nil {
-				slog.Error(err.Error())
 				if ctx.Err() != nil {
 					slog.Error(context.Canceled.Error())
+				}
+				select {
+				case errChan <- err:
+				default:
+					slog.Error("error channel closed")
 				}
 				continue
 			}

@@ -2,6 +2,7 @@ package cronjobs
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/DanglingDynamo/chronotube/internal/models"
 	"github.com/DanglingDynamo/chronotube/internal/repository"
@@ -18,4 +19,5 @@ func StoreVideos(
 			errChan <- err
 		}
 	}
+	slog.Info("stopping store videos")
 }

@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"google.golang.org/api/googleapi"
 
+	"github.com/DanglingDynamo/chronotube/internal/constants"
 	"github.com/DanglingDynamo/chronotube/internal/database"
 	"github.com/DanglingDynamo/chronotube/internal/models"
 	"github.com/DanglingDynamo/chronotube/pkg/youtube"
@@ -16,11 +18,17 @@ import (
 
 // Implements the VideoRepository interface
 type YoutubeRepository struct {
-	client *youtube.YoutubeClient
-	db     *database.Queries
+	client     *youtube.YoutubeClient
+	db         *database.Queries
+	extraKeys  []string
+	currentKey int
 }
 
-func NewYoutubeRepository(apiKey string, db *database.Queries) (*YoutubeRepository, error) {
+func NewYoutubeRepository(
+	apiKey string,
+	db *database.Queries,
+	extrakeys ...string,
+) (*YoutubeRepository, error) {
 	if apiKey != "" {
 		return nil, errors.New("please provide an API key")
 	}
@@ -31,8 +39,10 @@ func NewYoutubeRepository(apiKey string, db *database.Queries) (*YoutubeReposito
 	}
 
 	return &YoutubeRepository{
-		client: ytClient,
-		db:     db,
+		client:     ytClient,
+		db:         db,
+		extraKeys:  extrakeys,
+		currentKey: 0,
 	}, nil
 }
 
@@ -40,13 +50,22 @@ func (repo *YoutubeRepository) FetchVideosFromAPI(
 	query string,
 	publishedAfter time.Time,
 ) ([]*models.Video, error) {
+	var googleErr *googleapi.Error
 	slog.Info("Fetching Videos")
 	ytVideos, err := repo.client.FetchVideos(
 		query,
 		publishedAfter.AddDate(0, 0, -9),
 	) // Search for videos that were uploaded after current time - 9 days (added 9 days so that I get some data)
 	if err != nil {
-		slog.Error(err.Error())
+		if errors.As(err, &googleErr) {
+			if googleErr.Code == 403 {
+				err := repo.changeClients()
+				if err != nil {
+					return nil, err
+				}
+				return nil, errors.New("changing api keys")
+			}
+		}
 		return nil, err
 	}
 
@@ -143,4 +162,18 @@ func (repo *YoutubeRepository) FetchPaginatedVideos(
 	}
 
 	return videos, nil
+}
+
+func (repo *YoutubeRepository) changeClients() error {
+	if repo.currentKey >= len(repo.extraKeys) {
+		return constants.ErrAPIKeysUsed
+	}
+	client, err := youtube.NewYoutubeClient(context.Background(), repo.extraKeys[repo.currentKey])
+	repo.currentKey += 1
+	if err != nil {
+		return err
+	}
+
+	repo.client = client
+	return nil
 }

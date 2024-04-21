@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 
 	"github.com/DanglingDynamo/chronotube/internal/config"
+	"github.com/DanglingDynamo/chronotube/internal/constants"
 	cronjobs "github.com/DanglingDynamo/chronotube/internal/cron_jobs"
 	"github.com/DanglingDynamo/chronotube/internal/database"
 	"github.com/DanglingDynamo/chronotube/internal/handlers"
@@ -63,12 +65,18 @@ func main() {
 	}
 	routes.SetupRoutes(app, router)
 
-	go cronjobs.FetchVideos(ctx, time.Second*10, youtubeRepository, "basketball", out)
+	go cronjobs.FetchVideos(ctx, time.Second*10, youtubeRepository, "basketball", out, errChan)
 	go cronjobs.StoreVideos(out, youtubeRepository, errChan)
 
 	// Log errors in the goroutines also handle theme here if later required in case of emergency exit etc
 	go func() {
 		for err := range errChan {
+			if errors.Is(err, constants.ErrAPIKeysUsed) {
+				slog.Info("Out of API keys stopping FetchVideos")
+				cancel()
+				close(out)
+				close(errChan)
+			}
 			slog.Error(err.Error())
 		}
 	}()
