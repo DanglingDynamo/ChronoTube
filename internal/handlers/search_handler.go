@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 
@@ -31,6 +32,17 @@ func (sh *searchHandler) FetchVideosPaginated(writer http.ResponseWriter, req *h
 			"status":  "fail",
 			"message": err.Error(),
 		})
+		return
+	}
+
+	// Could use the goplayground validator instead to validate
+	_, err := base64.URLEncoding.DecodeString(request.NextPage)
+	if err != nil {
+		utils.WriteJSON(writer, http.StatusBadRequest, map[string]string{
+			"status":  "fail",
+			"message": "invalid next page string",
+		})
+		return
 	}
 
 	videos, nextPage, err := sh.service.QueryVideos(req.Context(), request)
@@ -39,6 +51,7 @@ func (sh *searchHandler) FetchVideosPaginated(writer http.ResponseWriter, req *h
 			"status":  "error",
 			"message": err.Error(),
 		})
+		return
 	}
 
 	utils.WriteJSON(writer, http.StatusOK, map[string]interface{}{
