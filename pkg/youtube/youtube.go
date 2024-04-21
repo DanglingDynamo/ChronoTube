@@ -2,7 +2,6 @@ package youtube
 
 import (
 	"context"
-	"log/slog"
 	"time"
 
 	"google.golang.org/api/option"
@@ -29,31 +28,51 @@ func NewYoutubeClient(ctx context.Context, apiKey string) (*YoutubeClient, error
 	}, nil
 }
 
-func (client *YoutubeClient) FetchVideos(query string, publishedAfter time.Time) error {
+func (client *YoutubeClient) FetchVideos(
+	query string,
+	publishedAfter time.Time,
+) ([]*youtube.SearchResult, error) {
 	call := client.service.Search.List([]string{"id", "snippet"}).
 		Q(query).
 		PublishedAfter(publishedAfter.Format(time.RFC3339))
 
 	response, err := call.Do()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	videos := make(
+		[]*youtube.SearchResult,
+		0,
+		len(response.Items),
+	) // max videos can be equal to length
 	for _, item := range response.Items {
 		switch item.Id.Kind {
 		case "youtube#video":
-			slog.Info(
-				item.Snippet.Title,
-				"url",
-				"https://www.youtube.com/watch?v="+item.Id.VideoId,
-				"thumbnail",
-				item.Snippet.Thumbnails.Default.Url,
-			)
+			videos = append(videos, item)
 		case "youtube#channel":
 		case "youtube#playlyst":
 			continue
 		}
 	}
 
-	return nil
+	return videos, nil
+}
+
+func (client *YoutubeClient) FetchVideoStatistics(
+	videoIDs ...string,
+) (map[string]*youtube.VideoStatistics, error) {
+	call := client.service.Videos.List([]string{"id", "snippet", "statistics"}).Id(videoIDs...)
+
+	response, err := call.Do()
+	if err != nil {
+		return nil, err
+	}
+
+	videoDetails := make(map[string]*youtube.VideoStatistics, len(response.Items))
+	for _, item := range response.Items {
+		videoDetails[item.Id] = item.Statistics
+	}
+
+	return videoDetails, nil
 }

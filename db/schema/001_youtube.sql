@@ -1,27 +1,23 @@
 -- +goose Up
 
+-- enable extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- videos table
-CREATE TABLE videos (
+CREATE TABLE IF NOT EXISTS videos (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tite TEXT,
-    desc TEXT,
-    published_on TIMESTAMP,
-    thumbnail_url TEXT,
-    provider TEXT, -- provides details about video provider 'youtube', 'vimeo', 'facebook' etc
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    published_on TIMESTAMP NOT NULL,
+    thumbnail_url TEXT NOT NULL,
+    provider TEXT NOT NULL, -- provides details about video provider 'youtube', 'vimeo', 'facebook' etc
+    video_id TEXT NOT NULL, -- contains information about the actual url of the video from where we can stream it
+    view_count INT NOT NULL,
+    like_count INT NOT NULL,
+    favorite_count INT NOT NULL,
+    comment_count INT NOT NULL
 );
 
--- youtube specific data goes here
-CREATE TABLE IF NOT EXISTS youtube_videos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    video UUID NOT NULL,
-    video_id TEXT, -- contains information about the actual url of the video from where we can stream it
-    view_count INT,
-    like_count INT,
-    favorite_count INT,
-    comment_count INT,
-    FOREIGN KEY (video) REFERENCES videos(id) ON DELETE CASCADE;
-);
 
 -- +goose Down
-DROP TABLE youtube_videos;
 DROP TABLE videos;

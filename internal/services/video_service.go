@@ -1,7 +1,11 @@
 package services
 
-import "time"
+import (
+	"time"
+
+	"github.com/DanglingDynamo/chronotube/internal/models"
+)
 
 type VideoService interface {
-	FetchVideos(string, time.Time)
+	FetchVideos(query string, publishedAfter time.Time) ([]*models.Video, error)
 }
