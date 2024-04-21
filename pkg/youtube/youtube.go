@@ -51,7 +51,7 @@ func (client *YoutubeClient) FetchVideos(
 		case "youtube#video":
 			videos = append(videos, item)
 		case "youtube#channel":
-		case "youtube#playlyst":
+		case "youtube#playlist":
 			continue
 		}
 	}
