@@ -15,9 +15,10 @@ func FetchVideos(
 	service repository.VideoRepository,
 	queryString string,
 	out chan<- []*models.Video,
-	errChan chan<- error,
 ) {
 	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -28,11 +29,21 @@ func FetchVideos(
 			videos, err := service.FetchVideosFromAPI(queryString, tick)
 			if err != nil {
 				slog.Error(err.Error())
-				errChan <- err
+				if ctx.Err() != nil {
+					slog.Error(context.Canceled.Error())
+				}
 				continue
 			}
 
-			out <- videos
+			select {
+			case out <- videos:
+			case <-ctx.Done():
+				slog.Info("context cancelled while sending")
+				return
+			default:
+				slog.Info("out channel closed")
+			}
+
 		}
 	}
 }

@@ -36,12 +36,12 @@ func NewYoutubeRepository(apiKey string, db *database.Queries) (*YoutubeReposito
 	}, nil
 }
 
-func (service *YoutubeRepository) FetchVideosFromAPI(
+func (repo *YoutubeRepository) FetchVideosFromAPI(
 	query string,
 	publishedAfter time.Time,
 ) ([]*models.Video, error) {
 	slog.Info("Fetching Videos")
-	ytVideos, err := service.client.FetchVideos(
+	ytVideos, err := repo.client.FetchVideos(
 		query,
 		publishedAfter.AddDate(0, 0, -9),
 	) // Search for videos that were uploaded after current time - 9 days (added 9 days so that I get some data)
@@ -56,7 +56,7 @@ func (service *YoutubeRepository) FetchVideosFromAPI(
 		ids[i] = video.Id.VideoId
 	}
 
-	videoStatistics, err := service.client.FetchVideoStatistics(ids...)
+	videoStatistics, err := repo.client.FetchVideoStatistics(ids...)
 	if err != nil {
 		slog.Error(err.Error())
 		return nil, err
@@ -87,12 +87,12 @@ func (service *YoutubeRepository) FetchVideosFromAPI(
 }
 
 // Storing Videos is specific to the service hence implemented here
-func (service *YoutubeRepository) StoreVideos(ctx context.Context, videos []*models.Video) error {
+func (repo *YoutubeRepository) StoreVideos(ctx context.Context, videos []*models.Video) error {
 	var pgErr *pgconn.PgError
 	storeCount := 0
 	for i := range videos {
 		video := videos[i]
-		_, err := service.db.InsertVideo(ctx, database.InsertVideoParams{
+		_, err := repo.db.InsertVideo(ctx, database.InsertVideoParams{
 			Title:         video.Title,
 			Description:   video.Description,
 			PublishedOn:   video.PublishedOn,
@@ -121,4 +121,26 @@ func (service *YoutubeRepository) StoreVideos(ctx context.Context, videos []*mod
 		slog.Info("Stored Videos", "count", storeCount)
 	}
 	return nil
+}
+
+func (repo *YoutubeRepository) FetchPaginatedVideos(
+	ctx context.Context,
+	nextPage int,
+) ([]models.Video, error) {
+	offset := 5 * nextPage
+
+	response, err := repo.db.FetchVideosPaginated(ctx, int32(offset))
+	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		return nil, err
+	}
+
+	videos := make([]models.Video, 0, 5) // Page size is 5
+	for _, video := range response {
+		videos = append(videos, models.VideoFromDatabaseVideo(video))
+	}
+
+	return videos, nil
 }

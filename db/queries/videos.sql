@@ -4,4 +4,4 @@ INSERT INTO videos(title, description, published_on, thumbnail_url, provider, vi
 -- name: FetchVideosPaginated :many
 SELECT * FROM videos ORDER BY published_on DESC LIMIT 10 OFFSET $1; -- implement pagination (not the most optimal method)
 
--- TODO: Implement cursor based pagination
+-- TODO: Implement cursor based pagination as an optimization
