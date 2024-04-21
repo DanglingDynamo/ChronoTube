@@ -45,6 +45,7 @@ func main() {
 	youtubeRepository, err := repository.NewYoutubeRepository(
 		os.Getenv("API_SECRET_KEY"),
 		database.New(initializers.DB),
+		// Can specify []string{} for the extra api keys here
 	)
 	if err != nil {
 		slog.Error(err.Error())
